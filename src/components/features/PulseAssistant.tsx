@@ -2,8 +2,7 @@ import { X, Send, Zap, Sparkles, BookOpen, TrendingUp, Loader2 } from 'lucide-re
 import { Button } from '../ui/button';
 import { usePulseStore } from '../../stores/pulseStore';
 import { useState, useRef, useEffect } from 'react';
-import { supabase } from '../../lib/supabase';
-import { FunctionsHttpError } from '@supabase/supabase-js';
+import { AIClient } from '../../ai/AIClient';
 
 export const PulseAssistant = () => {
   const { messages, isOpen, togglePulse, addMessage } = usePulseStore();
@@ -34,28 +33,12 @@ export const PulseAssistant = () => {
         content: msg.content
       }));
 
-      const { data, error } = await supabase.functions.invoke('pulse-chat', {
-        body: {
-          message: userMessage,
-          conversationHistory
-        }
+      const data = await AIClient.pulseChat({
+        message: userMessage,
+        conversationHistory
       });
 
-      if (error) {
-        let errorMessage = error.message;
-        if (error instanceof FunctionsHttpError) {
-          try {
-            const statusCode = error.context?.status ?? 500;
-            const textContent = await error.context?.text();
-            errorMessage = `[Code: ${statusCode}] ${textContent || error.message || 'Unknown error'}`;
-          } catch {
-            errorMessage = `${error.message || 'Failed to read response'}`;
-          }
-        }
-        throw new Error(errorMessage);
-      }
-
-      addMessage(data.reply, 'pulse');
+      addMessage(data.reply || 'No response received.', 'pulse');
     } catch (error: any) {
       console.error('Pulse chat error:', error);
       addMessage(

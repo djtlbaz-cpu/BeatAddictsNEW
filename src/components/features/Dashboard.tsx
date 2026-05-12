@@ -1,7 +1,11 @@
-import { Music, Sparkles, Mic, Play, TrendingUp, Clock, Award } from 'lucide-react';
+import { Award, Clock, Mic, Music, Play, Sparkles, TrendingUp } from 'lucide-react';
 import { Button } from '../ui/button';
 
-export const Dashboard = () => {
+type DashboardProps = {
+  onNavigate: (tab: 'dashboard' | 'sequencer' | 'ai' | 'mixer' | 'voice' | 'tutorials') => void;
+};
+
+export const Dashboard = ({ onNavigate }: DashboardProps) => {
   return (
     <div className="flex-1 overflow-auto p-6">
       <div className="max-w-7xl mx-auto">
@@ -25,15 +29,24 @@ export const Dashboard = () => {
               </div>
             </div>
             <p className="text-lg text-gray-300 max-w-2xl mb-6">
-              Create studio-quality music with AI-powered beat generation, professional sequencer, 
+              Create studio-quality music with AI-powered beat generation, professional sequencer,
               and intelligent assistant. Your creative journey starts here.
             </p>
             <div className="flex gap-3">
-              <Button size="lg" className="bg-gradient-to-r from-neon-purple to-neon-cyan hover:shadow-xl hover:shadow-neon-purple/50 text-lg h-12 px-8">
+              <Button
+                size="lg"
+                className="bg-gradient-to-r from-neon-purple to-neon-cyan hover:shadow-xl hover:shadow-neon-purple/50 text-lg h-12 px-8"
+                onClick={() => onNavigate('ai')}
+              >
                 <Sparkles className="w-5 h-5 mr-2" />
                 Generate with AI
               </Button>
-              <Button size="lg" variant="outline" className="border-2 border-white/30 text-white hover:bg-white/10 text-lg h-12 px-8">
+              <Button
+                size="lg"
+                variant="outline"
+                className="border-2 border-white/30 text-white hover:bg-white/10 text-lg h-12 px-8"
+                onClick={() => onNavigate('sequencer')}
+              >
                 <Play className="w-5 h-5 mr-2" />
                 Start Creating
               </Button>
@@ -51,7 +64,7 @@ export const Dashboard = () => {
             <div className="text-3xl font-bold mb-1">24</div>
             <div className="text-sm text-muted-foreground">Projects Created</div>
           </div>
-          
+
           <div className="glass-panel rounded-xl p-6">
             <div className="flex items-center justify-between mb-2">
               <Sparkles className="w-6 h-6 text-neon-cyan" />
@@ -60,7 +73,7 @@ export const Dashboard = () => {
             <div className="text-3xl font-bold mb-1">156</div>
             <div className="text-sm text-muted-foreground">AI Generations</div>
           </div>
-          
+
           <div className="glass-panel rounded-xl p-6">
             <div className="flex items-center justify-between mb-2">
               <Clock className="w-6 h-6 text-neon-pink" />
@@ -68,7 +81,7 @@ export const Dashboard = () => {
             <div className="text-3xl font-bold mb-1">42h</div>
             <div className="text-sm text-muted-foreground">Studio Time</div>
           </div>
-          
+
           <div className="glass-panel rounded-xl p-6">
             <div className="flex items-center justify-between mb-2">
               <Award className="w-6 h-6 text-yellow-500" />
@@ -88,7 +101,11 @@ export const Dashboard = () => {
             <p className="text-sm text-muted-foreground mb-4">
               Let AI create beats, melodies, and full tracks based on your preferences
             </p>
-            <Button variant="outline" className="w-full border-studio-border hover:border-neon-purple hover:bg-neon-purple/10">
+            <Button
+              variant="outline"
+              className="w-full border-studio-border hover:border-neon-purple hover:bg-neon-purple/10"
+              onClick={() => onNavigate('ai')}
+            >
               Start Generating
             </Button>
           </div>
@@ -101,7 +118,11 @@ export const Dashboard = () => {
             <p className="text-sm text-muted-foreground mb-4">
               Create patterns with our professional step sequencer and sample library
             </p>
-            <Button variant="outline" className="w-full border-studio-border hover:border-neon-cyan hover:bg-neon-cyan/10">
+            <Button
+              variant="outline"
+              className="w-full border-studio-border hover:border-neon-cyan hover:bg-neon-cyan/10"
+              onClick={() => onNavigate('sequencer')}
+            >
               Open Sequencer
             </Button>
           </div>
@@ -114,7 +135,11 @@ export const Dashboard = () => {
             <p className="text-sm text-muted-foreground mb-4">
               Add professional AI-generated vocals to your tracks (Premium)
             </p>
-            <Button variant="outline" className="w-full border-neon-pink/50 text-neon-pink hover:bg-neon-pink/10">
+            <Button
+              variant="outline"
+              className="w-full border-neon-pink/50 text-neon-pink hover:bg-neon-pink/10"
+              onClick={() => onNavigate('voice')}
+            >
               Upgrade to Pro
             </Button>
           </div>

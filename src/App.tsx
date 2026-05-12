@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { Header } from './components/layout/Header';
-import { Sidebar } from './components/features/Sidebar';
-import { Dashboard } from './components/features/Dashboard';
-import { Sequencer } from './components/features/Sequencer';
 import { AIStudio } from './components/features/AIStudio';
-import { Tutorials } from './components/features/Tutorials';
+import { Dashboard } from './components/features/Dashboard';
+import { Mixer } from './components/features/Mixer';
 import { PulseAssistant } from './components/features/PulseAssistant';
+import { Sequencer } from './components/features/Sequencer';
+import { Sidebar } from './components/features/Sidebar';
+import { Tutorials } from './components/features/Tutorials';
+import { Header } from './components/layout/Header';
 import { Toaster } from './components/ui/toaster';
 
 type TabType = 'dashboard' | 'sequencer' | 'ai' | 'mixer' | 'voice' | 'tutorials';
@@ -16,7 +17,7 @@ function App() {
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard':
-        return <Dashboard />;
+        return <Dashboard onNavigate={setActiveTab} />;
       case 'sequencer':
         return <Sequencer />;
       case 'ai':
@@ -30,14 +31,7 @@ function App() {
       case 'tutorials':
         return <Tutorials />;
       case 'mixer':
-        return (
-          <div className="flex-1 overflow-auto p-6 flex items-center justify-center">
-            <div className="text-center">
-              <h2 className="text-2xl font-bold mb-2">Mixer Coming Soon</h2>
-              <p className="text-muted-foreground">Professional mixing console in development</p>
-            </div>
-          </div>
-        );
+        return <Mixer />;
       case 'voice':
         return (
           <div className="flex-1 overflow-auto p-6 flex items-center justify-center">

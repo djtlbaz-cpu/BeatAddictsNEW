@@ -1,22 +1,25 @@
-import { Sparkles, Waves, Music2, Zap, Mic, ChevronRight, CheckCircle2 } from 'lucide-react';
-import { Button } from '../ui/button';
+import { CheckCircle2, ChevronRight, Mic, Music2, Sparkles, Waves, Zap } from 'lucide-react';
 import { useState } from 'react';
-import { AIGenerationStage } from '../../types';
-import { supabase } from '../../lib/supabase';
-import { FunctionsHttpError } from '@supabase/supabase-js';
+import { AIWorkflow } from '../../ai/AIWorkflow';
 import { useToast } from '../../hooks/use-toast';
+import { PluginManager } from '../../plugins/pluginManager';
+import { AIGenerationStage, PluginChainItem, PluginHostSupport } from '../../types';
+import { Button } from '../ui/button';
 
 const stages: AIGenerationStage[] = [
   { id: '1', name: 'Beat Pattern', description: 'Generate rhythm foundation', icon: 'drum', completed: false },
-  { id: '2', name: 'Melody', description: 'Create harmonic progression', icon: 'music', completed: false },
-  { id: '3', name: 'Bassline', description: 'Add low-end groove', icon: 'waves', completed: false },
-  { id: '4', name: 'Bass Drop', description: 'Build energy and impact', icon: 'zap', completed: false }
+  { id: '2', name: 'Bassline', description: 'Add low-end groove', icon: 'waves', completed: false },
+  { id: '3', name: 'Melody', description: 'Create melodic hooks', icon: 'music', completed: false },
+  { id: '4', name: 'Chords', description: 'Build harmonic support', icon: 'music', completed: false },
+  { id: '5', name: 'Arrangement', description: 'Lay out the track timeline', icon: 'zap', completed: false }
 ];
 
 export const AIStudio = () => {
   const { toast } = useToast();
   const [selectedGenre, setSelectedGenre] = useState('');
   const [selectedMood, setSelectedMood] = useState('');
+  const [selectedHost, setSelectedHost] = useState<PluginHostSupport>('Ableton');
+  const [pluginChain, setPluginChain] = useState<PluginChainItem[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [currentStage, setCurrentStage] = useState(0);
   const [generatedContent, setGeneratedContent] = useState<Record<string, string>>({});
@@ -24,40 +27,36 @@ export const AIStudio = () => {
 
   const genres = ['Electronic', 'Hip Hop', 'House', 'Trap', 'Lo-Fi', 'Ambient'];
   const moods = ['Energetic', 'Chill', 'Dark', 'Uplifting', 'Minimal', 'Epic'];
+  const hostOptions: PluginHostSupport[] = ['Ableton', 'FL Studio', 'LocalHost'];
 
   const generateStage = async (stageIndex: number) => {
     const stage = stages[stageIndex];
-    
+
     try {
-      const { data, error } = await supabase.functions.invoke('generate-music', {
-        body: {
-          genre: selectedGenre,
-          mood: selectedMood,
-          stage: stage.name
-        }
+      const data = await AIWorkflow.generateStage(stage.name, {
+        genre: selectedGenre,
+        mood: selectedMood,
+        host: selectedHost
       });
 
-      if (error) {
-        let errorMessage = error.message;
-        if (error instanceof FunctionsHttpError) {
-          try {
-            const statusCode = error.context?.status ?? 500;
-            const textContent = await error.context?.text();
-            errorMessage = `[Code: ${statusCode}] ${textContent || error.message || 'Unknown error'}`;
-          } catch {
-            errorMessage = `${error.message || 'Failed to read response'}`;
-          }
-        }
-        throw new Error(errorMessage);
+      const chain = PluginManager.buildPluginChain(stage.name, {
+        genre: selectedGenre,
+        mood: selectedMood,
+        host: selectedHost
+      }, selectedHost);
+      setPluginChain(chain);
+
+      if (stage.name === 'Beat Pattern' && data?.pattern) {
+        window.dispatchEvent(new CustomEvent('ai:pattern', { detail: data }));
       }
 
       setGeneratedContent(prev => ({
         ...prev,
-        [stage.name]: data.content
+        [stage.name]: typeof data === 'string' ? data : JSON.stringify(data, null, 2)
       }));
-      
+
       setCompletedStages(prev => new Set([...prev, stageIndex]));
-      
+
       return true;
     } catch (error: any) {
       console.error(`Stage ${stage.name} generation error:`, error);
@@ -75,26 +74,26 @@ export const AIStudio = () => {
     setCurrentStage(0);
     setCompletedStages(new Set());
     setGeneratedContent({});
-    
+
     // Generate each stage sequentially
     for (let i = 0; i < stages.length; i++) {
       setCurrentStage(i);
       const success = await generateStage(i);
-      
+
       if (!success) {
         setIsGenerating(false);
         return;
       }
-      
+
       // Wait a bit between stages for better UX
       if (i < stages.length - 1) {
         await new Promise(resolve => setTimeout(resolve, 800));
       }
     }
-    
+
     setIsGenerating(false);
     toast({
-      title: 'Track Generated! 🎉',
+      title: 'Track Generated!',
       description: 'Your AI-powered music is ready. Check the stages below for details.'
     });
   };
@@ -155,6 +154,28 @@ export const AIStudio = () => {
         </div>
       </div>
 
+      {/* Plugin Host Bridge Selection */}
+      <div className="mb-6">
+        <label className="text-sm font-semibold mb-2 block">Plugin Host Bridge</label>
+        <div className="grid grid-cols-3 gap-2">
+          {hostOptions.map((host) => (
+            <button
+              key={host}
+              onClick={() => setSelectedHost(host)}
+              className={`
+                px-4 py-3 rounded-lg border transition-all
+                ${selectedHost === host
+                  ? 'bg-neon-purple border-neon-purple text-white'
+                  : 'bg-studio-panel border-studio-border hover:border-neon-purple/50'
+                }
+              `}
+            >
+              {host}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Generation Stages */}
       <div className="mb-6">
         <label className="text-sm font-semibold mb-3 block">Generation Stages</label>
@@ -163,7 +184,7 @@ export const AIStudio = () => {
             const isActive = index === currentStage && isGenerating;
             const isCompleted = completedStages.has(index);
             const hasContent = generatedContent[stage.name];
-            
+
             return (
               <div key={stage.id}>
                 <div
@@ -196,18 +217,17 @@ export const AIStudio = () => {
                   </div>
                   {isActive && (
                     <div className="flex gap-1">
-                      {[...Array(3)].map((_, i) => (
+                      {['delay-75', 'delay-150', 'delay-200'].map((delayClass, i) => (
                         <div
                           key={i}
-                          className="w-2 h-2 bg-neon-purple rounded-full animate-waveform"
-                          style={{ animationDelay: `${i * 0.2}s` }}
+                          className={`w-2 h-2 bg-neon-purple rounded-full animate-waveform ${delayClass}`}
                         />
                       ))}
                     </div>
                   )}
                   {isCompleted && <ChevronRight className="w-5 h-5 text-neon-cyan" />}
                 </div>
-                
+
                 {/* Show generated content when expanded */}
                 {hasContent && generatedContent[`${stage.name}_expanded`] && (
                   <div className="mt-2 p-4 bg-studio-dark rounded-lg border border-studio-border">
@@ -220,6 +240,34 @@ export const AIStudio = () => {
         </div>
       </div>
 
+      {pluginChain.length > 0 && (
+        <div className="mb-6 p-4 rounded-lg border border-studio-border bg-studio-panel">
+          <div className="text-sm font-semibold mb-3">Plugin Chain Preview</div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {pluginChain.map((item) => (
+              <div key={item.pluginId} className="rounded-lg bg-[#11141f] p-4 border border-[#22263b]">
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <div className="font-semibold text-white">{item.pluginName}</div>
+                    <div className="text-xs text-muted-foreground">Stage {item.order}</div>
+                  </div>
+                  <div className="text-xs uppercase text-neon-cyan">{item.hostSupport.join(', ')}</div>
+                </div>
+                <div className="text-sm text-muted-foreground mb-2">{item.route.insertPoint || item.route.destination}</div>
+                <div className="text-sm text-white mb-3">Preset: {item.preset.name}</div>
+                <div className="grid gap-2 text-xs">
+                  {Object.entries(item.preset.parameterValues).map(([key, value]) => (
+                    <div key={key} className="rounded-md bg-[#16182d] p-2">
+                      <span className="font-medium text-white">{key}</span>: <span className="text-muted-foreground">{String(value)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Generate Button */}
       <Button
         onClick={handleGenerate}
@@ -229,11 +277,10 @@ export const AIStudio = () => {
         {isGenerating ? (
           <>
             <div className="flex gap-1 mr-2">
-              {[...Array(3)].map((_, i) => (
+              {['delay-75', 'delay-150', 'delay-200'].map((delayClass, i) => (
                 <div
                   key={i}
-                  className="w-1 h-4 bg-white rounded-full animate-waveform"
-                  style={{ animationDelay: `${i * 0.15}s` }}
+                  className={`w-1 h-4 bg-white rounded-full animate-waveform ${delayClass}`}
                 />
               ))}
             </div>
@@ -246,6 +293,9 @@ export const AIStudio = () => {
           </>
         )}
       </Button>
+      <div className="mt-3 text-xs text-muted-foreground">
+        Uses local AI fallback when the remote backend is unavailable. No remote API call is required for core beat generation.
+      </div>
 
       {/* Premium Voice Cloning CTA */}
       <div className="mt-6 p-4 rounded-lg bg-gradient-to-r from-neon-pink/10 to-neon-purple/10 border border-neon-pink/30">
